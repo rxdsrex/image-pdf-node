@@ -1,7 +1,9 @@
 /* eslint-disable max-len */
-const {PDFDocument} = require('pdf-lib');
-const {readFile, writeFile} = require('fs').promises;
+const {PDFDocument, StandardFonts, rgb, PageSizes} = require('pdf-lib');
+const {join, extname, normalize, dirname} = require('path');
+const {readFile, writeFile, readdir} = require('fs').promises;
 const {existsSync} = require('fs');
+const pageSize = [PageSizes.A4[1], PageSizes.A4[0]];
 
 const utils = Object.freeze({
 
@@ -105,6 +107,54 @@ const utils = Object.freeze({
  */
 function createPdf(newPdfLocation, imageDir, chapterName = '') {
   return new Promise(async (resolve, reject) => {
+    try {
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.setCreator('MyPDF Utility');
+
+      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      // Add chapter name in a page
+      if (chapterName !== '') {
+        const page = pdfDoc.addPage(pageSize);
+
+        const fontSize = 32;
+        const textWidth = helveticaFont.widthOfTextAtSize(chapterName, fontSize);
+        const textHeight = helveticaFont.heightAtSize(fontSize);
+
+        page.drawText(chapterName, {
+          x: page.getWidth() / 2 - textWidth / 2,
+          y: page.getHeight() / 2 - textHeight / 2,
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(0, 0, 0),
+        });
+      }
+
+      const imgFiles = await readdir(normalize(imageDir), {
+        encoding: 'utf-8',
+        withFileTypes: true,
+      });
+      for (const file of imgFiles) {
+        if (file.isFile()) {
+          const imgPath = join(normalize(imageDir), file.name);
+          const imgStr = await utils.readFile(imgPath);
+          try {
+            utils.addImage(pdfDoc, imgStr, extname(file.name).substring(1));
+          } catch (err) {
+            if (err.message === 'Please add a JPEG or a PNG file') continue;
+            else throw err;
+          }
+        }
+      }
+
+      const pdfStrB64 = await pdfDoc.saveAsBase64({
+        dataUri: false,
+      });
+      utils.writeFile(pdfFileLocation, pdfStrB64);
+      resolve();
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
