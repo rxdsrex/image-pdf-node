@@ -1,5 +1,7 @@
 /* eslint-disable max-len */
 const {PDFDocument} = require('pdf-lib');
+const {readFile, writeFile} = require('fs').promises;
+const {existsSync} = require('fs');
 
 const utils = Object.freeze({
 
@@ -11,6 +13,18 @@ const utils = Object.freeze({
    */
   readFile: function(filePath) {
     return new Promise(async (resolve, reject) => {
+      try {
+        if (existsSync(normalize(filePath))) {
+          const aFileStr = await readFile(filePath, {
+            encoding: 'base64',
+          });
+          resolve(aFileStr);
+        } else {
+          reject(new Error('Cannot read from file, file does not exist'));
+        }
+      } catch (err) {
+        reject(err);
+      }
     });
   },
 
@@ -23,6 +37,18 @@ const utils = Object.freeze({
    */
   writeFile: function(filePath, data) {
     return new Promise(async (resolve, reject) => {
+      try {
+        if (existsSync(normalize(dirname(filePath)))) {
+          await writeFile(filePath, data, {
+            encoding: 'base64',
+          });
+          resolve();
+        } else {
+          reject(new Error('Cannot write to file, folder/directory does not exist'));
+        }
+      } catch (err) {
+        reject(err);
+      }
     });
   },
 
@@ -35,6 +61,35 @@ const utils = Object.freeze({
    */
   addImage: function(pdfDoc, imageStr, imageExt) {
     return new Promise(async (resolve, reject) => {
+      try {
+        let image;
+        if (imageExt.toLowerCase() === 'png') {
+          image = await pdfDoc.embedPng(imageStr);
+        } else if (imageExt.toLowerCase() === 'jpg' || imageExt.toLowerCase() === 'jpeg') {
+          image = await pdfDoc.embedJpg(imageStr);
+        } else {
+          reject(new Error('Please add a JPEG or a PNG file'));
+          return;
+        }
+
+        const {
+          width,
+          height,
+        } = image.size();
+
+        const page = pdfDoc.addPage([width + 10, height + 10]);
+
+        page.drawImage(image, {
+          x: 5,
+          y: 5,
+          width: width,
+          height: height,
+        });
+
+        resolve(pdfDoc);
+      } catch (err) {
+        reject(err);
+      }
     });
   },
 });
