@@ -100,12 +100,12 @@ const utils = Object.freeze({
  * Create a new pdf to add new pictures
  *
  * @function
- * @param {string} newPdfLocation location where the PDF file will be created
+ * @param {string} pdfFileLocation location where the PDF file will be created
  * @param {string} imageDir Location of the images
  * @param {string} chapterName Name of the chapter
  * @return {Promise<void>} base64 output of the pdf
  */
-function createPdf(newPdfLocation, imageDir, chapterName = '') {
+function createPdf(pdfFileLocation, imageDir, chapterName = '') {
   return new Promise(async (resolve, reject) => {
     try {
       const pdfDoc = await PDFDocument.create();
