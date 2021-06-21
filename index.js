@@ -222,4 +222,25 @@ function modifyPdf(pdfFileLocation, imageDir, chapterName = '') {
 
 // eslint-disable-next-line require-jsdoc
 (function main() {
+  const pdfFileLocation = './output/test1.pdf';
+
+  // Create a new PDF
+  const imageDirCreate = './assets/batch1';
+  const chapterNameCreate = 'Lectures by Dr. Najeeb';
+  createPdf(pdfFileLocation, imageDirCreate, chapterNameCreate)
+      .then(() => console.log('PDF created successfully'))
+      .catch((err) => {
+        console.error(err.message);
+      });
+
+  setTimeout(() => {
+    // Modify an existing PDF
+    const imageDirModify = './assets/batch2';
+    const chapterNameModify = 'Marrow lectures on drugs';
+    modifyPdf(pdfFileLocation, imageDirModify, chapterNameModify)
+        .then(() => console.log('PDF updated successfully'))
+        .catch((err) => {
+          console.error(err.message);
+        });
+  }, 3000);
 })();
