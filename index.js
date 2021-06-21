@@ -169,6 +169,54 @@ function createPdf(newPdfLocation, imageDir, chapterName = '') {
  */
 function modifyPdf(pdfFileLocation, imageDir, chapterName = '') {
   return new Promise(async (resolve, reject) => {
+    try {
+      const existingPdfStr = await utils.readFile(pdfFileLocation);
+      const pdfDoc = await PDFDocument.load(existingPdfStr);
+
+      const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+      // Add chapter name in a page
+      if (chapterName !== '') {
+        const page = pdfDoc.addPage(pageSize);
+
+        const fontSize = 32;
+        const textWidth = helveticaFont.widthOfTextAtSize(chapterName, fontSize);
+        const textHeight = helveticaFont.heightAtSize(fontSize);
+
+        page.drawText(chapterName, {
+          x: page.getWidth() / 2 - textWidth / 2,
+          y: page.getHeight() / 2 - textHeight / 2,
+          size: fontSize,
+          font: helveticaFont,
+          color: rgb(0, 0, 0),
+        });
+      }
+
+      const imgFiles = await readdir(normalize(imageDir), {
+        encoding: 'utf-8',
+        withFileTypes: true,
+      });
+      for (const file of imgFiles) {
+        if (file.isFile()) {
+          const imgPath = join(normalize(imageDir), file.name);
+          const imgStr = await utils.readFile(imgPath);
+          try {
+            utils.addImage(pdfDoc, imgStr, extname(file.name).substring(1));
+          } catch (err) {
+            if (err.message === 'Please add a JPEG or a PNG file') continue;
+            else throw err;
+          }
+        }
+      }
+
+      const pdfStrB64 = await pdfDoc.saveAsBase64({
+        dataUri: false,
+      });
+      utils.writeFile(pdfFileLocation, pdfStrB64);
+      resolve();
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
